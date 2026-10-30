@@ -1,0 +1,17 @@
+canonical_column,dimension,type,role,possible_variations,data_pattern,priority
+name,identifier,categorical,exclude,"name,student_name,learner_name,child_name,pupil_name,full_name,respondent_name",person_name,100
+uid,identifier,categorical,identifier,"uid,id,student_id,learner_id,child_id,pupil_id,participant_id,child_uid",high_uniqueness,100
+school,identifier,categorical,grouping,"school,school_name,facility,institution,academy,college",school_name,100
+grade,identifier,ordinal,disaggregation,"grade,class,year,level,standard,form",grade_value,95
+date,time,categorical,time,"date,assessment_date,test_date,survey_date,collection_date",date,100
+round,time,categorical,time,"round,wave,baseline,endline,midline,timepoint",round_label,100
+sex,demographic,categorical,disaggregation,"sex,gender,child_sex,child_gender",categorical_sex,80
+age,demographic,continuous,disaggregation,"age,child_age",integer_age,80
+teacher,identifier,categorical,grouping,"teacher,teacher_name,instructor,facilitator",person_name,70
+district,location,categorical,disaggregation,district,location_name,80
+region,location,categorical,disaggregation,"region,province,state",location_name,80
+village,location,categorical,grouping,"village,community,settlement",location_name,80
+enumerator,admin,categorical,exclude,"enumerator,data_collector,assessor",person_name,80
+disability,demographic,categorical,disaggregation,"disability,disability_status",categorical,80
+protection_status,demographic,categorical,disaggregation,protection_status,categorical,80
+language_match,demographic,categorical,disaggregation,language_match,categorical,80

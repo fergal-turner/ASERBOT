@@ -1,0 +1,105 @@
+"""Default metadata and ASER scoring dictionaries.
+
+Straight copies of Resources/metadata_dictionary.csv and
+Resources/aser_dictionary.csv, so the pipeline (and the browser app) can run
+without any uploaded files. `possible_variations` stays a comma-separated
+string because the interpreter and matcher split it on commas.
+"""
+
+import pandas as pd
+
+
+default_metadata = {
+    "name": {"dimension": "identifier", "type": "categorical", "role": "exclude",
+             "possible_variations": "name,student_name,learner_name,child_name,pupil_name,full_name,respondent_name",
+             "data_pattern": "person_name", "priority": 100},
+    "uid": {"dimension": "identifier", "type": "categorical", "role": "identifier",
+            "possible_variations": "uid,id,student_id,learner_id,child_id,pupil_id,participant_id,child_uid",
+            "data_pattern": "high_uniqueness", "priority": 100},
+    "school": {"dimension": "identifier", "type": "categorical", "role": "grouping",
+               "possible_variations": "school,school_name,facility,institution,academy,college",
+               "data_pattern": "school_name", "priority": 100},
+    "grade": {"dimension": "identifier", "type": "ordinal", "role": "disaggregation",
+              "possible_variations": "grade,class,year,level,standard,form",
+              "data_pattern": "grade_value", "priority": 95},
+    "date": {"dimension": "time", "type": "categorical", "role": "time",
+             "possible_variations": "date,assessment_date,test_date,survey_date,collection_date",
+             "data_pattern": "date", "priority": 100},
+    "round": {"dimension": "time", "type": "categorical", "role": "time",
+              "possible_variations": "round,wave,baseline,endline,midline,timepoint",
+              "data_pattern": "round_label", "priority": 100},
+    "sex": {"dimension": "demographic", "type": "categorical", "role": "disaggregation",
+            "possible_variations": "sex,gender,child_sex,child_gender",
+            "data_pattern": "categorical_sex", "priority": 80},
+    "age": {"dimension": "demographic", "type": "continuous", "role": "disaggregation",
+            "possible_variations": "age,child_age",
+            "data_pattern": "integer_age", "priority": 80},
+    "teacher": {"dimension": "identifier", "type": "categorical", "role": "grouping",
+                "possible_variations": "teacher,teacher_name,instructor,facilitator",
+                "data_pattern": "person_name", "priority": 70},
+    "district": {"dimension": "location", "type": "categorical", "role": "disaggregation",
+                 "possible_variations": "district",
+                 "data_pattern": "location_name", "priority": 80},
+    "region": {"dimension": "location", "type": "categorical", "role": "disaggregation",
+               "possible_variations": "region,province,state",
+               "data_pattern": "location_name", "priority": 80},
+    "village": {"dimension": "location", "type": "categorical", "role": "grouping",
+                "possible_variations": "village,community,settlement",
+                "data_pattern": "location_name", "priority": 80},
+    "enumerator": {"dimension": "admin", "type": "categorical", "role": "grouping",
+                   "possible_variations": "enumerator,data_collector,assessor",
+                   "data_pattern": "person_name", "priority": 80},
+    "disability": {"dimension": "demographic", "type": "categorical", "role": "disaggregation",
+                   "possible_variations": "disability,disability_status",
+                   "data_pattern": "categorical", "priority": 80},
+    "protection_status": {"dimension": "demographic", "type": "categorical", "role": "disaggregation",
+                          "possible_variations": "protection_status",
+                          "data_pattern": "categorical", "priority": 80},
+    "language_match": {"dimension": "demographic", "type": "categorical", "role": "disaggregation",
+                       "possible_variations": "language_match",
+                       "data_pattern": "categorical", "priority": 80},
+}
+
+
+default_aser = {
+    "reading_letter": {"domain": "reading",
+                       "possible_variations": "letter,letters,letter_reading,read_letter,letter_level"},
+    "reading_word": {"domain": "reading",
+                     "possible_variations": "word,words,word_reading,read_word,word_level"},
+    "reading_sentence": {"domain": "reading",
+                         "possible_variations": "sentence,sentences,sentence_reading,read_sentence,sentence_level"},
+    "reading_story": {"domain": "reading",
+                      "possible_variations": "story,stories,paragraph,passage,read_story,story_level"},
+    "reading_comprehension": {"domain": "reading",
+                              "possible_variations": "comprehension,story_comprehension,story_questions,questions,reading_comprehension"},
+    "number_recognition_1_10": {"domain": "math",
+                                "possible_variations": "number_1_10,single_digit,digit_1_10,num_1_10,numrec"},
+    "number_recognition_1_99": {"domain": "math",
+                                "possible_variations": "number_1_99,double_digit,two_digit,digit_1_99,num_1_99,numrec2"},
+    "number_recognition": {"domain": "math",
+                           "possible_variations": "number_recognition,number_id,numbers,number_test"},
+    "addition": {"domain": "math",
+                 "possible_variations": "addition,add,addition_task,addition_test"},
+    "subtraction": {"domain": "math",
+                    "possible_variations": "subtraction,subtract,subtraction_task,subtraction_test"},
+    "multiplication": {"domain": "math",
+                       "possible_variations": "multiplication,multiply,mult,multiplication_task,multiplication_test"},
+    "division": {"domain": "math",
+                 "possible_variations": "division,divide,division_task,division_test"},
+}
+
+
+def _to_frame(dictionary):
+    return (
+        pd.DataFrame.from_dict(dictionary, orient="index")
+        .reset_index()
+        .rename(columns={"index": "canonical_column"})
+    )
+
+
+def get_default_metadata_df():
+    return _to_frame(default_metadata)
+
+
+def get_default_aser_df():
+    return _to_frame(default_aser)

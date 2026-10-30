@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ASERBOT</title>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js"></script>
+<script src="https://cdn.plot.ly/plotly-3.0.1.min.js" charset="utf-8"></script>
+<style>
+  :root {
+    --red: #da291c; --teal: #00B2A9; --bg: #F5F5F5; --card: #ffffff;
+    --text: #1F1F1F; --muted: #666666; --line: #D9D9D9;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font-family: "Segoe UI", Arial, sans-serif; }
+  header { background: var(--red); color: #fff; padding: 18px 32px; }
+  header h1 { margin: 0; font-size: 1.6rem; letter-spacing: .5px; }
+  header p { margin: 4px 0 0; opacity: .9; font-size: .95rem; }
+  main { max-width: 1400px; margin: 0 auto; padding: 24px 32px 64px; }
+
+  .panel { background: var(--card); border: 1px solid var(--line);
+           border-radius: 8px; padding: 18px 20px; margin-bottom: 20px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  button, .file-btn { background: var(--red); color: #fff; border: 0; border-radius: 6px;
+           padding: 10px 18px; font-size: .95rem; cursor: pointer; font-family: inherit; }
+  button.secondary, .file-btn { background: #fff; color: var(--red); border: 1px solid var(--red); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  input[type=file] { display: none; }
+  #fileName { color: var(--muted); font-size: .9rem; }
+  details { margin-top: 14px; }
+  summary { cursor: pointer; color: var(--muted); font-size: .9rem; }
+  .dict-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 10px; }
+  .privacy { color: var(--muted); font-size: .8rem; margin: 14px 0 0; }
+
+  #status { display: flex; align-items: center; gap: 10px; color: var(--muted); }
+  .spinner { width: 16px; height: 16px; border: 3px solid var(--line);
+             border-top-color: var(--red); border-radius: 50%;
+             animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .hidden { display: none !important; }
+
+  #review summary.review-head { font-size: 1.05rem; color: var(--text); font-weight: 600; }
+  #review .hint { color: var(--muted); font-size: .88rem; margin: 8px 0 14px; }
+  .review-cols { display: grid; gap: 0 32px; grid-template-columns: repeat(auto-fit, minmax(480px, 1fr)); }
+  .review-cols h3 { margin: 8px 0; font-size: 1rem; border-bottom: 2px solid var(--teal); padding-bottom: 4px; }
+  .map-row { display: grid; grid-template-columns: 170px minmax(0, 1fr) 90px; gap: 8px;
+             align-items: center; padding: 5px 0; border-bottom: 1px solid var(--bg); }
+  .map-row .field { font-weight: 600; font-size: .9rem; overflow-wrap: anywhere; }
+  .map-row .field small { display: block; font-weight: 400; color: var(--muted); }
+  .map-row select { width: 100%; padding: 6px; border: 1px solid var(--line); border-radius: 4px;
+                    font-family: inherit; font-size: .88rem; background: #fff; }
+  .map-row .tag { font-size: .72rem; padding: 2px 6px; border-radius: 10px; text-align: center; }
+  .tag.matched { background: #d9f0e6; color: #2f8a63; }
+  .tag.review { background: #fff5d4; color: #8a6d00; }
+  .tag.unmatched { background: #EEEEEE; color: var(--muted); }
+  .tag.manual { background: #efe9f3; color: #7e5aa6; }
+  .map-row.conflict select { border-color: #a61b14; background: #f9d3d0; }
+  .map-row .sample { grid-column: 2 / 3; color: var(--muted); font-size: .75rem; margin-top: -2px; }
+  #reviewActions { display: flex; align-items: center; gap: 14px; margin-top: 16px; }
+  #conflictMsg { color: #a61b14; font-size: .88rem; }
+  @media (max-width: 640px) { .map-row { grid-template-columns: 1fr; } .map-row .sample { grid-column: 1; } }
+
+  #summary dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 16px; margin: 0; }
+  #summary dt { color: var(--muted); }
+  #summary dd { margin: 0; overflow-wrap: anywhere; }
+  .msg-error { color: #a61b14; } .msg-warn { color: #8a6d00; }
+  #summary ul { margin: 4px 0; padding-left: 20px; }
+
+  h2.section { margin: 32px 0 12px; font-size: 1.25rem; border-bottom: 2px solid var(--teal);
+               padding-bottom: 6px; }
+  .grid { display: grid; gap: 16px;
+          grid-template-columns: repeat(auto-fill, minmax(560px, 1fr)); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+          padding: 8px; overflow: hidden; min-width: 0; }
+  .card.wide { grid-column: 1 / -1; }
+  @media (max-width: 640px) {
+    .grid { grid-template-columns: 1fr; }
+    main { padding: 16px; }
+    #summary dl { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>ASERBOT</h1>
+  <p>Upload an ASER dataset to score it and explore the results. Everything runs locally in your browser.</p>
+</header>
+
+<main>
+  <section class="panel">
+    <div class="controls">
+      <label class="file-btn" for="dataFile">Choose dataset (CSV)</label>
+      <input type="file" id="dataFile" accept=".csv">
+      <span id="fileName">No file selected</span>
+      <button id="runBtn" disabled>Run analysis</button>
+      <button id="sampleBtn" class="secondary" disabled>Load sample data</button>
+    </div>
+    <details>
+      <summary>Advanced: use your own dictionaries (optional)</summary>
+      <div class="dict-row">
+        <label class="file-btn" for="metaFile">Metadata dictionary (CSV)</label>
+        <input type="file" id="metaFile" accept=".csv">
+        <span id="metaName" class="muted">Using default</span>
+      </div>
+      <div class="dict-row">
+        <label class="file-btn" for="aserFile">ASER dictionary (CSV)</label>
+        <input type="file" id="aserFile" accept=".csv">
+        <span id="aserName" class="muted">Using default</span>
+      </div>
+    </details>
+    <p class="privacy">Your data never leaves this computer: it is processed in the browser and not uploaded anywhere.</p>
+  </section>
+
+  <section id="statusPanel" class="panel">
+    <div id="status"><div class="spinner"></div><span id="statusText">Loading Python engine (first load takes ~20 seconds)...</span></div>
+  </section>
+
+  <section id="review" class="panel hidden">
+    <details open id="reviewDetails">
+      <summary class="review-head">Review column matches</summary>
+      <p class="hint">ASERBOT has proposed which column in your dataset fills each field. Change any dropdown to force a match, or choose "(none)" to leave a field out. Two fields cannot use the same column.</p>
+      <div id="reviewBody" class="review-cols"></div>
+      <div id="reviewActions">
+        <button id="confirmBtn">Confirm and run</button>
+        <span id="conflictMsg"></span>
+      </div>
+    </details>
+  </section>
+
+  <section id="summary" class="panel hidden"></section>
+  <div id="results"></div>
+</main>
+
+<script>
+const PY_MODULES = __PY_MODULES__;
+const SAMPLE_CSV = __SAMPLE_CSV__;
+
+let pyodide = null;
+let datasetText = null;
+let metaText = null;
+let aserText = null;
+
+const $ = id => document.getElementById(id);
+
+function setStatus(text, busy = true) {
+  $("statusPanel").classList.remove("hidden");
+  $("statusText").textContent = text;
+  document.querySelector(".spinner").classList.toggle("hidden", !busy);
+}
+
+function updateButtons() {
+  const ready = pyodide !== null;
+  $("runBtn").disabled = !(ready && datasetText);
+  $("sampleBtn").disabled = !ready;
+}
+
+async function initPython() {
+  try {
+    pyodide = await loadPyodide();
+    setStatus("Loading pandas and plotly...");
+    await pyodide.loadPackage(["pandas", "micropip"]);
+    await pyodide.runPythonAsync(`
+import micropip
+await micropip.install("plotly")
+`);
+    for (const [name, code] of Object.entries(PY_MODULES)) {
+      pyodide.FS.writeFile(name, code);
+    }
+    await pyodide.runPythonAsync("import sys; sys.path.insert(0, '.')\nfrom run_app import detect_columns, run_analysis");
+    setStatus("Ready. Choose a dataset or load the sample data.", false);
+  } catch (err) {
+    setStatus("Could not start the Python engine: " + err.message + " (an internet connection is needed on first load).", false);
+    console.error(err);
+  }
+  updateButtons();
+}
+
+function readFile(input, nameEl, setter) {
+  input.addEventListener("change", async () => {
+    const file = input.files[0];
+    if (!file) return;
+    setter(await file.text());
+    nameEl.textContent = file.name;
+    updateButtons();
+  });
+}
+
+readFile($("dataFile"), $("fileName"), t => { datasetText = t; });
+readFile($("metaFile"), $("metaName"), t => { metaText = t; });
+readFile($("aserFile"), $("aserName"), t => { aserText = t; });
+
+$("sampleBtn").addEventListener("click", () => {
+  datasetText = SAMPLE_CSV;
+  $("fileName").textContent = "sample_data.csv (built in)";
+  updateButtons();
+  startReview();
+});
+$("runBtn").addEventListener("click", startReview);
+$("confirmBtn").addEventListener("click", () => runAnalysis(collectMappings()));
+
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+}
+
+function list(items, cls) {
+  if (!items.length) return "";
+  return `<ul class="${cls}">${items.map(i => `<li>${esc(i)}</li>`).join("")}</ul>`;
+}
+
+// ---------- Column review ----------
+let detected = null;
+
+function pageBusy(busy) {
+  $("runBtn").disabled = busy || !datasetText;
+  $("sampleBtn").disabled = busy;
+  $("confirmBtn").disabled = busy;
+}
+
+async function startReview() {
+  if (!pyodide || !datasetText) return;
+  pageBusy(true);
+  $("results").innerHTML = "";
+  $("summary").classList.add("hidden");
+  $("review").classList.add("hidden");
+  setStatus("Detecting columns...");
+  await new Promise(r => setTimeout(r, 50));
+
+  try {
+    pyodide.globals.set("_csv", datasetText);
+    pyodide.globals.set("_meta", metaText);
+    pyodide.globals.set("_aser", aserText);
+    detected = JSON.parse(pyodide.runPython("detect_columns(_csv, _meta, _aser)"));
+    if (!detected.ok) {
+      setStatus("Could not read the dataset: " + detected.error, false);
+    } else {
+      renderReview();
+      setStatus("Check the proposed matches below, change any that are wrong, then confirm.", false);
+    }
+  } catch (err) {
+    setStatus("Unexpected error: " + err.message, false);
+    console.error(err);
+  }
+  pageBusy(false);
+  updateButtons();
+}
+
+function fieldRow(f, kind) {
+  const row = document.createElement("div");
+  row.className = "map-row";
+  row.dataset.canonical = f.canonical;
+  row.dataset.proposed = f.selected || "";
+
+  const label = document.createElement("div");
+  label.className = "field";
+  label.innerHTML = `${esc(f.canonical)}<small>${esc(f.group)}</small>`;
+
+  const select = document.createElement("select");
+  select.add(new Option("(none)", ""));
+  const suggested = (f.candidates || []).filter(c => detected.columns.includes(c));
+  const addOptions = (parent, cols) => cols.forEach(c => parent.appendChild(new Option(c, c)));
+  if (suggested.length) {
+    const g1 = document.createElement("optgroup"); g1.label = "Suggested";
+    addOptions(g1, suggested); select.appendChild(g1);
+    const g2 = document.createElement("optgroup"); g2.label = "All columns";
+    addOptions(g2, detected.columns.filter(c => !suggested.includes(c))); select.appendChild(g2);
+  } else {
+    addOptions(select, detected.columns);
+  }
+  select.value = f.selected || "";
+  select.addEventListener("change", refreshReview);
+
+  const tag = document.createElement("span");
+  tag.className = "tag";
+
+  const sample = document.createElement("div");
+  sample.className = "sample";
+
+  row._baseStatus = f.status;
+  row.append(label, select, tag, sample);
+  return row;
+}
+
+function renderReview() {
+  const body = $("reviewBody");
+  body.innerHTML = "";
+  [["Metadata and disaggregation fields", detected.metadata_fields],
+   ["ASER assessment tasks", detected.aser_fields]].forEach(([title, fields]) => {
+    const col = document.createElement("div");
+    const h = document.createElement("h3");
+    h.textContent = title;
+    col.appendChild(h);
+    fields.forEach(f => col.appendChild(fieldRow(f, title)));
+    body.appendChild(col);
+  });
+  $("review").classList.remove("hidden");
+  $("reviewDetails").open = true;
+  refreshReview();
+}
+
+function refreshReview() {
+  const rows = [...document.querySelectorAll(".map-row")];
+  const counts = {};
+  rows.forEach(r => {
+    const v = r.querySelector("select").value;
+    if (v) counts[v] = (counts[v] || 0) + 1;
+  });
+
+  const clashes = new Set();
+  rows.forEach(r => {
+    const select = r.querySelector("select");
+    const v = select.value;
+    const tag = r.querySelector(".tag");
+    const sample = r.querySelector(".sample");
+
+    r.classList.toggle("conflict", !!v && counts[v] > 1);
+    if (v && counts[v] > 1) clashes.add(v);
+
+    if (v !== r.dataset.proposed) { tag.className = "tag manual"; tag.textContent = v ? "manual" : "removed"; }
+    else if (!v) { tag.className = "tag unmatched"; tag.textContent = "not found"; }
+    else if (r._baseStatus === "matched") { tag.className = "tag matched"; tag.textContent = "matched"; }
+    else { tag.className = "tag review"; tag.textContent = "check"; }
+
+    const vals = v ? (detected.samples[v] || []) : [];
+    sample.textContent = vals.length ? "e.g. " + vals.join(", ") : "";
+  });
+
+  $("conflictMsg").textContent = clashes.size
+    ? "Each column can only be used once: " + [...clashes].join(", ")
+    : "";
+  $("confirmBtn").disabled = clashes.size > 0;
+}
+
+function collectMappings() {
+  const mappings = {};
+  document.querySelectorAll(".map-row").forEach(r => {
+    const v = r.querySelector("select").value;
+    if (v) mappings[r.dataset.canonical] = v;
+  });
+  return mappings;
+}
+
+// ---------- Results ----------
+function renderSummary(result) {
+  const log = result.log;
+  const pairs = obj => Object.entries(obj).map(([field, col]) => col === field ? col : `${col} → ${field}`).join(", ") || "none";
+  let html = "<dl>";
+  html += `<dt>Rows</dt><dd>${log.rows}</dd>`;
+  if (log.analysis_type) html += `<dt>Analysis type</dt><dd>${esc(log.analysis_type.replace(/_/g, " "))}</dd>`;
+  html += `<dt>Figures</dt><dd>${result.figures.length}</dd>`;
+  html += `<dt>Columns used</dt><dd>${esc(pairs(log.mappings))}</dd>`;
+  if (log.unmapped.length) html += `<dt>Fields not mapped</dt><dd>${esc(log.unmapped.join(", "))}</dd>`;
+  html += "</dl>";
+  html += list(log.errors, "msg-error");
+  html += list(log.warnings, "msg-warn");
+  $("summary").innerHTML = html;
+  $("summary").classList.remove("hidden");
+}
+
+function renderFigures(figures) {
+  const results = $("results");
+  results.innerHTML = "";
+  const bySection = {};
+  figures.forEach(f => (bySection[f.section] = bySection[f.section] || []).push(f));
+
+  for (const [section, items] of Object.entries(bySection)) {
+    const h = document.createElement("h2");
+    h.className = "section";
+    h.textContent = section;
+    results.appendChild(h);
+
+    const grid = document.createElement("div");
+    grid.className = "grid";
+    results.appendChild(grid);
+
+    items.forEach(item => {
+      const card = document.createElement("div");
+      card.className = "card" + (item.title.includes("Baseline vs Endline") ? " wide" : "");
+      grid.appendChild(card);
+      const fig = JSON.parse(item.figure);
+      fig.layout.width = null;
+      Plotly.newPlot(card, fig.data, fig.layout, {responsive: true, displaylogo: false});
+    });
+  }
+}
+
+async function runAnalysis(mappings) {
+  if (!pyodide || !datasetText) return;
+  pageBusy(true);
+  $("results").innerHTML = "";
+  $("summary").classList.add("hidden");
+  setStatus("Analysing...");
+
+  // Let the browser paint the spinner before the blocking Python call
+  await new Promise(r => setTimeout(r, 50));
+
+  try {
+    pyodide.globals.set("_csv", datasetText);
+    pyodide.globals.set("_meta", metaText);
+    pyodide.globals.set("_aser", aserText);
+    pyodide.globals.set("_map", JSON.stringify(mappings));
+    const raw = pyodide.runPython("run_analysis(_csv, _map, _meta, _aser)");
+    const result = JSON.parse(raw);
+    renderSummary(result);
+    if (result.ok) {
+      $("reviewDetails").open = false;
+      renderFigures(result.figures);
+      setStatus(`Done: ${result.figures.length} figures. Reopen "Review column matches" to change a mapping and re-run.`, false);
+    } else {
+      setStatus("The analysis could not be completed. See the messages below the review table.", false);
+    }
+  } catch (err) {
+    setStatus("Unexpected error: " + err.message, false);
+    console.error(err);
+  }
+  pageBusy(false);
+  updateButtons();
+  refreshReview();
+}
+
+initPython();
+</script>
+</body>
+</html>

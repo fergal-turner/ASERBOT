@@ -1,0 +1,7 @@
+{
+  "imports_dir": "Data",
+  "handoff_dir": "Handoff",
+  "exports_dir": "Results",
+  "figures_dir": "Results/figures",
+  "tables_dir": "Results/tables"
+}

@@ -1,0 +1,13 @@
+canonical_column,domain,possible_variations
+reading_letter,reading,"letter,letters,letter_reading,read_letter,letter_level"
+reading_word,reading,"word,words,word_reading,read_word,word_level"
+reading_sentence,reading,"sentence,sentences,sentence_reading,read_sentence,sentence_level"
+reading_story,reading,"story,stories,paragraph,passage,read_story,story_level"
+reading_comprehension,reading,"comprehension,story_comprehension,story_questions,questions,reading_comprehension"
+number_recognition_1_10,math,"number_1_10,single_digit,digit_1_10,num_1_10,numrec"
+number_recognition_1_99,math,"number_1_99,double_digit,two_digit,digit_1_99,num_1_99,numrec2"
+number_recognition,math,"number_recognition,number_id,numbers,number_test"
+addition,math,"addition,add,addition_task,addition_test"
+subtraction,math,"subtraction,subtract,subtraction_task,subtraction_test"
+multiplication,math,"multiplication,multiply,mult,multiplication_task,multiplication_test"
+division,math,"division,divide,division_task,division_test"
