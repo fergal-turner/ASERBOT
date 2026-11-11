@@ -25,9 +25,10 @@ class ASERScorer:
         ("reading_comprehension", "Comprehension")
     ]
 
-    def __init__(self, df: pd.DataFrame, metadata_columns: list):
+    def __init__(self,  df: pd.DataFrame, metadata_columns: list, analysis_type: str):
         self.df = df.copy()
         self.metadata_columns = metadata_columns
+        self.analysis_type = analysis_type
 
     # =====================================================
     # HELPERS
@@ -239,7 +240,55 @@ class ASERScorer:
             scale[level] = label
 
         return scale
+    
+    @staticmethod
+    def calculate_change_series(
+        df,
+        id_col,
+        round_col,
+        outcome_col,
+        baseline_value="baseline",
+        endline_value="endline"
+    ):
+        """
+        Returns a Series that can be assigned directly:
 
+        df["literacy_change"] = calculate_change_series(...)
+
+        Change = endline - baseline
+        """
+
+        pivot = (
+            df[[id_col, round_col, outcome_col]]
+            .pivot(
+                index=id_col,
+                columns=round_col,
+                values=outcome_col
+            )
+        )
+
+        change_lookup = (
+            pivot[endline_value]
+            - pivot[baseline_value]
+        )
+
+        return df[id_col].map(change_lookup)
+    
+    @staticmethod
+    def change_binary_series(
+            change_series,
+            threshold=1
+        ):
+            """
+            Returns binary Series.
+
+            1 = improved by threshold or more
+            0 = otherwise
+            """
+            return (change_series >= threshold).astype(float).where(
+                change_series.notna()
+            )
+    
     # =====================================================
     # OUTPUT
     # =====================================================
@@ -292,6 +341,39 @@ class ASERScorer:
         )
 
         self.keep_canonical_columns()
+
+        if max(literacy_scale) > 0:
+            self.df["foundational_literacy"] = (
+                self.df["literacy_level"] == max(literacy_scale)
+            ).astype(int)
+        if max(numeracy_scale) > 0:
+            self.df["foundational_numeracy"] = (
+                self.df["numeracy_level"] == max(numeracy_scale)
+            ).astype(int)
+
+        if self.analysis_type == "repeat_measures":
+
+            self.df["literacy_change"] = self.calculate_change_series(
+                self.df,
+                id_col="uid",
+                round_col="round",
+                outcome_col="literacy_level"
+            )
+
+            self.df["literacy_change_binary"] = self.change_binary_series(
+                self.df["literacy_change"]
+            )
+
+            self.df["numeracy_change"] = self.calculate_change_series(
+                self.df,
+                id_col="uid",
+                round_col="round",
+                outcome_col="numeracy_level"
+            )
+
+            self.df["numeracy_change_binary"] = self.change_binary_series(
+                self.df["numeracy_change"]
+            )
 
         return {
             "scored_df": self.df,

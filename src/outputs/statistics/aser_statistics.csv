@@ -1,0 +1,35 @@
+design,outcome,variable,model,stat,value,lower_ci,upper_ci,p_value,n,contrast,passed,reason,registry_outcome
+cross_section,literacy_level,sex,ord_logit,or,1.1443234736633232,0.7023769552563516,1.8643496239123696,0.5882697342580385,200,male vs female (reference),True,,levels
+cross_section,literacy_level,region,ord_logit,or,0.8134073366291207,0.4066535370030367,1.6270152232246264,0.5593093845323109,200,north vs east (reference); other categories not shown,True,,levels
+cross_section,literacy_level,disability,ord_logit,or,0.8738797611468617,0.5363784980976676,1.4237443142305872,0.5882759569052833,200,no_disability vs disability (reference),True,,levels
+cross_section,literacy_level,protection_status,ord_logit,or,0.943548248892681,0.5164648658122638,1.723802250494353,0.8501056330132899,200,idp vs host_comm (reference); other categories not shown,True,,levels
+cross_section,literacy_level,language_match,ord_logit,or,0.8738797611468617,0.5363784980976676,1.4237443142305872,0.5882759569052833,200,lang_mismatch vs lang_match (reference),True,,levels
+cross_section,numeracy_level,sex,ord_logit,or,1.0907308999406569,0.6676010288838763,1.7820432333280494,0.7287867006069995,200,male vs female (reference),True,,levels
+cross_section,numeracy_level,region,ord_logit,or,1.945211960253341,0.9602284980740108,3.9405720387409295,0.06470520948002843,200,north vs east (reference); other categories not shown,True,,levels
+cross_section,numeracy_level,disability,ord_logit,or,0.9167973349799536,0.5611413502145041,1.4978709965056858,0.7287248039952812,200,no_disability vs disability (reference),True,,levels
+cross_section,numeracy_level,protection_status,ord_logit,or,1.1446694621822486,0.632685783003649,2.070961941695854,0.6551219970891369,200,idp vs host_comm (reference); other categories not shown,True,,levels
+cross_section,numeracy_level,language_match,ord_logit,or,0.9167973349799536,0.5611413502145041,1.4978709965056858,0.7287248039952812,200,lang_mismatch vs lang_match (reference),True,,levels
+cross_section,foundational_literacy,sex,logit,or,0.9382716049382722,0.4660322123587627,1.889040245045817,0.8583649613035839,200,male vs female (reference),True,,foundational_learning
+cross_section,foundational_literacy,region,logit,or,1.480769230769231,0.5395197319762473,4.0641284921335075,0.44602280416629625,200,north vs east (reference); other categories not shown,True,,foundational_learning
+cross_section,foundational_literacy,disability,logit,or,1.0657894736842108,0.5293693464830056,2.1457744196235455,0.8583649613035816,200,no_disability vs disability (reference),True,,foundational_learning
+cross_section,foundational_literacy,protection_status,logit,or,0.982142857142857,0.39343672940078445,2.4517400632774047,0.9692060735911247,200,idp vs host_comm (reference); other categories not shown,True,,foundational_learning
+cross_section,foundational_literacy,language_match,logit,or,1.0657894736842108,0.5293693464830056,2.1457744196235455,0.8583649613035816,200,lang_mismatch vs lang_match (reference),True,,foundational_learning
+cross_section,foundational_numeracy,sex,logit,or,1.0657894736842108,0.5293693464830056,2.1457744196235455,0.8583649613035816,200,male vs female (reference),True,,foundational_learning
+cross_section,foundational_numeracy,region,logit,or,1.284900284900285,0.4803148408294248,3.4372636483309194,0.6175555557403266,200,north vs east (reference); other categories not shown,True,,foundational_learning
+cross_section,foundational_numeracy,disability,logit,or,0.9382716049382718,0.4660322123587624,1.889040245045816,0.8583649613035826,200,no_disability vs disability (reference),True,,foundational_learning
+cross_section,foundational_numeracy,protection_status,logit,or,1.2218181818181815,0.4878964375808261,3.0597470168537138,0.6688425394360739,200,idp vs host_comm (reference); other categories not shown,True,,foundational_learning
+cross_section,foundational_numeracy,language_match,logit,or,0.9382716049382718,0.4660322123587624,1.889040245045816,0.8583649613035826,200,lang_mismatch vs lang_match (reference),True,,foundational_learning
+cross_section,foundational_literacy,age,logit,or,1.0467849214180827,0.9152314154519289,1.1972476613110914,0.5045958205955028,200,per 1-unit increase,True,,foundational_learning
+cross_section,foundational_numeracy,age,logit,or,1.037002027899875,0.906685958963984,1.186048151773761,0.5959167501748102,200,per 1-unit increase,True,,foundational_learning
+repeat_cross,foundational_literacy,sex,logit,or,0.9382716049382722,0.4660322123587627,1.889040245045817,0.8583649613035839,200,male vs female (reference),True,,foundational_learning
+repeat_cross,foundational_literacy,region,logit,or,1.480769230769231,0.5395197319762473,4.0641284921335075,0.44602280416629625,200,north vs east (reference); other categories not shown,True,,foundational_learning
+repeat_cross,foundational_literacy,disability,logit,or,1.0657894736842108,0.5293693464830056,2.1457744196235455,0.8583649613035816,200,no_disability vs disability (reference),True,,foundational_learning
+repeat_cross,foundational_literacy,protection_status,logit,or,0.982142857142857,0.39343672940078445,2.4517400632774047,0.9692060735911247,200,idp vs host_comm (reference); other categories not shown,True,,foundational_learning
+repeat_cross,foundational_literacy,language_match,logit,or,1.0657894736842108,0.5293693464830056,2.1457744196235455,0.8583649613035816,200,lang_mismatch vs lang_match (reference),True,,foundational_learning
+repeat_cross,foundational_numeracy,sex,logit,or,1.0657894736842108,0.5293693464830056,2.1457744196235455,0.8583649613035816,200,male vs female (reference),True,,foundational_learning
+repeat_cross,foundational_numeracy,region,logit,or,1.284900284900285,0.4803148408294248,3.4372636483309194,0.6175555557403266,200,north vs east (reference); other categories not shown,True,,foundational_learning
+repeat_cross,foundational_numeracy,disability,logit,or,0.9382716049382718,0.4660322123587624,1.889040245045816,0.8583649613035826,200,no_disability vs disability (reference),True,,foundational_learning
+repeat_cross,foundational_numeracy,protection_status,logit,or,1.2218181818181815,0.4878964375808261,3.0597470168537138,0.6688425394360739,200,idp vs host_comm (reference); other categories not shown,True,,foundational_learning
+repeat_cross,foundational_numeracy,language_match,logit,or,0.9382716049382718,0.4660322123587624,1.889040245045816,0.8583649613035826,200,lang_mismatch vs lang_match (reference),True,,foundational_learning
+repeat_cross,foundational_literacy,age,logit,or,1.0467849214180827,0.9152314154519289,1.1972476613110914,0.5045958205955028,200,per 1-unit increase,True,,foundational_learning
+repeat_cross,foundational_numeracy,age,logit,or,1.037002027899875,0.906685958963984,1.186048151773761,0.5959167501748102,200,per 1-unit increase,True,,foundational_learning

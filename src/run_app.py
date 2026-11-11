@@ -6,15 +6,47 @@ Two stages so the user can review column matches in the UI:
 """
 import io
 import json
+from pathlib import Path
 
 import pandas as pd
 
 from default_dictionaries import get_default_metadata_df, get_default_aser_df
 from dataset_interpreter import DataInterpreter
 from aser_column_matcher import ASERColumnMatcher
+from aser_analysisplanner import ASERAnalysisPlanner
 from aser_validator import ASERValidator
 from aser_scorer import ASERScorer
 from aser_analyser_plotly import ASER_Analyser_Plotly
+
+
+def _detect_analysis_type(df):
+    if "round" not in df.columns:
+        return "cross_section"
+
+    if "uid" not in df.columns:
+        return "repeated_cross_section"
+
+    rounds_per_child = df.groupby("uid")["round"].nunique()
+    if rounds_per_child.max() > 1:
+        return "repeated_measures"
+
+    return "repeated_cross_section"
+
+
+def _read_analysis_registry():
+    candidates = [
+        Path(__file__).resolve().parent.parent
+        / "Resources"
+        / "analysis_registry.csv",
+        Path("analysis_registry.csv"),
+    ]
+    for path in candidates:
+        if path.is_file():
+            return pd.read_csv(path)
+
+    raise FileNotFoundError(
+        "Could not find Resources/analysis_registry.csv."
+    )
 
 
 def _read_dictionary(csv_text, default_fn):
@@ -93,7 +125,13 @@ def detect_columns(csv_text, metadata_csv=None, aser_csv=None):
         return json.dumps({"ok": False, "error": f"{type(exc).__name__}: {exc}"})
 
 
-def run_analysis(csv_text, mappings_json=None, metadata_csv=None, aser_csv=None):
+def run_analysis(
+    csv_text,
+    mappings_json=None,
+    metadata_csv=None,
+    aser_csv=None,
+    statistics=False,
+):
     """Return JSON: {ok, log, figures}.
 
     mappings_json: JSON object {canonical_field: dataset_column}. If omitted,
@@ -163,12 +201,79 @@ def run_analysis(csv_text, mappings_json=None, metadata_csv=None, aser_csv=None)
         if not validation["dataset_ready"]:
             return finish(False)
 
-        scored = ASERScorer(df=df, metadata_columns=metadata_columns).run()["scored_df"]
+        analysis_type = _detect_analysis_type(df)
+        scoring_type = (
+            "repeat_measures"
+            if analysis_type == "repeated_measures"
+            else analysis_type
+        )
+        planner_design = {
+            "cross_section": "cross_section",
+            "repeated_cross_section": "repeat_cross",
+            "repeated_measures": "repeat_measures",
+        }[analysis_type]
+        scored = ASERScorer(
+            df=df,
+            metadata_columns=metadata_columns,
+            analysis_type=scoring_type,
+        ).run()["scored_df"]
+
+        analysis_registry = _read_analysis_registry()
+        analysis_plan = ASERAnalysisPlanner(
+            df=scored,
+            metadata=metadata_df.rename(
+                columns={"canonical_column": "name"}
+            ),
+            analysis_registry=analysis_registry,
+            design=planner_design,
+        ).build_analysis_plan()
+
+        statistics_results = None
+        if statistics:
+            if analysis_type == "repeated_measures":
+                raise NotImplementedError(
+                    "Statistical models do not adjust for repeated "
+                    "observations of the same child."
+                )
+
+            from aser_statistics import ASERStatistics
+
+            statistics_metadata = (
+                analysis_plan[["variable", "grouping"]]
+                .drop_duplicates()
+                .rename(columns={
+                    "variable": "variable_name",
+                    "grouping": "analysis_group",
+                })
+            )
+            statistics_runner = ASERStatistics(
+                metadata_df=statistics_metadata,
+                registry_path=analysis_registry,
+            )
+            statistics_results = pd.concat(
+                [
+                    statistics_runner.run(
+                        df=scored,
+                        design=plan_design,
+                        outcomes=(
+                            analysis_plan.loc[
+                                analysis_plan["design"] == plan_design,
+                                "outcome",
+                            ].dropna().unique().tolist()
+                        ),
+                    )
+                    for plan_design in analysis_plan["design"].unique()
+                ],
+                ignore_index=True,
+            )
 
         analyser = ASER_Analyser_Plotly(
-            scored, metadata_df.set_index("canonical_column").to_dict(orient="index")
+            scored,
+            analysis_plan,
+            statistics=statistics,
+            statistics_results=statistics_results,
         )
-        log["analysis_type"] = analyser.detect_analysis_type()
+        log["analysis_type"] = analysis_type
 
         figures = [
             {"section": r["section"], "title": r["title"], "figure": r["figure"].to_json()}

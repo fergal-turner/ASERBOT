@@ -1,5 +1,8 @@
 # main.py
 
+from pathlib import Path
+import re
+
 import pandas as pd
 
 
@@ -7,139 +10,30 @@ from dataset_interpreter import DataInterpreter
 from aser_column_matcher import ASERColumnMatcher
 from aser_validator import ASERValidator
 from aser_scorer import ASERScorer
-from aser_analyser import ASER_Analyser
+from aser_analyser_plotly import ASER_Analyser_Plotly
+from aser_analysisplanner import ASERAnalysisPlanner
+from default_dictionaries import *
 
 from sc_theme import *
 
 
 
-default_aser = {
-    "reading_letter": {
-        "domain": "reading",
-        "possible_variations": [
-            "letter",
-            "letters",
-            "letter_reading",
-            "read_letter",
-            "letter_level",
-        ],
-    },
-    "reading_word": {
-        "domain": "reading",
-        "possible_variations": [
-            "word",
-            "words",
-            "word_reading",
-            "read_word",
-            "word_level",
-        ],
-    },
-    "reading_sentence": {
-        "domain": "reading",
-        "possible_variations": [
-            "sentence",
-            "sentences",
-            "sentence_reading",
-            "read_sentence",
-            "sentence_level",
-        ],
-    },
-    "reading_story": {
-        "domain": "reading",
-        "possible_variations": [
-            "story",
-            "stories",
-            "paragraph",
-            "passage",
-            "read_story",
-            "story_level",
-        ],
-    },
-    "reading_comprehension": {
-        "domain": "reading",
-        "possible_variations": [
-            "comprehension",
-            "story_comprehension",
-            "story_questions",
-            "questions",
-            "reading_comprehension",
-        ],
-    },
-    "number_recognition_1_10": {
-        "domain": "math",
-        "possible_variations": [
-            "number_1_10",
-            "single_digit",
-            "digit_1_10",
-            "num_1_10",
-            "numrec",
-        ],
-    },
-    "number_recognition_1_99": {
-        "domain": "math",
-        "possible_variations": [
-            "number_1_99",
-            "double_digit",
-            "two_digit",
-            "digit_1_99",
-            "num_1_99",
-            "numrec2",
-        ],
-    },
-    "number_recognition": {
-        "domain": "math",
-        "possible_variations": [
-            "number_recognition",
-            "number_id",
-            "numbers",
-            "number_test",
-        ],
-    },
-    "addition": {
-        "domain": "math",
-        "possible_variations": [
-            "addition",
-            "add",
-            "addition_task",
-            "addition_test",
-        ],
-    },
-    "subtraction": {
-        "domain": "math",
-        "possible_variations": [
-            "subtraction",
-            "subtract",
-            "subtraction_task",
-            "subtraction_test",
-        ],
-    },
-    "multiplication": {
-        "domain": "math",
-        "possible_variations": [
-            "multiplication",
-            "multiply",
-            "mult",
-            "multiplication_task",
-            "multiplication_test",
-        ],
-    },
-    "division": {
-        "domain": "math",
-        "possible_variations": [
-            "division",
-            "divide",
-            "division_task",
-            "division_test",
-        ],
-    },
-}
-
+default_aser = get_default_aser_df()
+default_metadata = get_default_metadata_df()
+default_registry = get_default_statistics_registry()
 
 # =====================================================
 # HELPERS
 # =====================================================
 
+def clean_path(value):
+
+    return str(value).strip().strip("\"'").strip()
+
+
 def load_dataset(path):
+
+    path = clean_path(path)
 
     if path.lower().endswith(".csv"):
         return pd.read_csv(path)
@@ -148,8 +42,15 @@ def load_dataset(path):
         return pd.read_excel(path)
 
     raise ValueError(
-        "Dataset must be CSV or XLSX."
+        f"Dataset must be CSV or XLSX (got: {path!r})."
     )
+
+
+def safe_filename(text):
+
+    return re.sub(
+        r"[^A-Za-z0-9]+", "_", str(text)
+    ).strip("_").lower()
 
 
 def yes_no(question):
@@ -336,17 +237,53 @@ def main():
     print("\nASERBOT")
     print("=" * 60)
 
-    data_file = input(
+    data_file = clean_path(input(
         "Dataset path: "
-    )
+    ))
 
-    metadata_dictionary = input(
+    metadata_dictionary = clean_path(input(
         "Metadata dictionary CSV (leave blank to use default): "
+    ))
+
+    aser_dictionary = clean_path(input(
+        "ASER dictionary CSV (leave blank to use default): "
+    ))
+
+    registry_input = clean_path(input(
+        "Analysis registry CSV (leave blank to use default): "
+    ))
+
+    if registry_input:
+        analysis_registry = pd.read_csv(registry_input)
+    else:
+        analysis_registry = default_registry
+
+    stats = yes_no(
+        "Run statistical analyses?"
     )
 
-    aser_dictionary = input(
-        "ASER dictionary CSV (leave blank to use default): "
-    )
+    statistics_registry = None
+
+    if stats:
+        try:
+            from aser_statistics import ASERStatistics
+        except ModuleNotFoundError as exc:
+            if exc.name == "statsmodels":
+                raise ModuleNotFoundError(
+                    "Statistics require statsmodels. Install it with "
+                    "`python -m pip install statsmodels`."
+                ) from exc
+            raise
+
+        statistics_registry = ASERStatistics
+
+    try:
+        import kaleido  # noqa: F401
+    except ModuleNotFoundError as exc:
+        raise ModuleNotFoundError(
+            "Exporting PNG figures requires kaleido. Install it with "
+            "`python -m pip install kaleido`."
+        ) from exc
 
     print("\nLoading dataset...")
 
@@ -357,18 +294,7 @@ def main():
             metadata_dictionary
         )
     else:
-        metadata_dict = (
-            pd.DataFrame.from_dict(
-                default_metadata,
-                orient="index"
-            )
-            .reset_index()
-            .rename(
-                columns={
-                    "index": "canonical_column"
-                }
-            )
-        )
+        metadata_dict = default_metadata
 
     if aser_dictionary:
         aser_dict = pd.read_csv(
@@ -377,14 +303,7 @@ def main():
     else:
         aser_dict = (
             pd.DataFrame.from_dict(
-                default_aser,
-                orient="index"
-            )
-            .reset_index()
-            .rename(
-                columns={
-                    "index": "canonical_column"
-                }
+                default_aser
             )
         )
 
@@ -462,10 +381,24 @@ def main():
     # SCORING
     # =====================================
 
+    if "round" not in df.columns:
+        analysis_type = "cross_section"
+    elif "uid" not in df.columns:
+        analysis_type = "repeated_cross_section"
+    elif df.groupby("uid")["round"].nunique().max() > 1:
+        analysis_type = "repeated_measures"
+    else:
+        analysis_type = "repeated_cross_section"
+
     scorer = ASERScorer(
         df=df,
         metadata_columns=
-        metadata_columns
+        metadata_columns,
+        analysis_type=(
+            "repeat_measures"
+            if analysis_type == "repeated_measures"
+            else analysis_type
+        ),
     )
 
     scoring_results = (
@@ -477,53 +410,124 @@ def main():
     ]
 
     # =====================================
-    # ANALYSIS
+    # ANALYSIS PLAN
     # =====================================
 
-    analyzer = ASER_Analyser(
-        df=scored_df,
-            metadata=(
-        metadata_dict
-        .set_index("canonical_column")
-        .to_dict(orient="index")
-        )
-        )
+    planner_design = {
+        "cross_section": "cross_section",
+        "repeated_cross_section": "repeat_cross",
+        "repeated_measures": "repeat_measures",
+    }[analysis_type]
 
-    plan = analyzer.analysis_plan()
+    analysis_plan = ASERAnalysisPlanner(
+        df=scored_df,
+        metadata=metadata_dict.rename(
+            columns={"canonical_column": "name"}
+        ),
+        analysis_registry=analysis_registry,
+        design=planner_design,
+    ).build_analysis_plan()
+
+    output_dir = Path("outputs")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    analysis_plan.to_csv(output_dir / "analysis_plan.csv", index=False)
 
     print("\nANALYSIS PLAN")
     print("=" * 60)
 
-    print(f"\nType: {plan['analysis_type']}")
+    print(f"\nType: {analysis_type}")
 
     print("\nFigures:")
-    for item in plan["figures"]:
-        print(f"  • {item}")
-
+    for _, plan_row in analysis_plan.iterrows():
+        if pd.isna(plan_row["vis"]) or not str(plan_row["vis"]).strip():
+            continue
+        print(
+            f"  • {plan_row['vis']}: "
+            f"{plan_row['variable']} vs {plan_row['outcome']}"
+        )
 
     proceed = input(
-            "\nProceed with analysis? (y/n): "
-        )
+        "\nProceed with analysis? (y/n): "
+    )
 
     if proceed.lower() != "y":
         print("Analysis cancelled.")
         return
 
-    analysis_type = (
-        analyzer.detect_analysis_type()
-    )
+    output_dir = Path("outputs")
+    figure_dir = output_dir / "figures"
+    figure_dir.mkdir(parents=True, exist_ok=True)
 
-    if analysis_type == "cross_section":
+    statistics = None
 
-        analyzer.run_cross_section_analysis()
+    if stats:
+        if analysis_type == "repeated_measures":
+            raise NotImplementedError(
+                "ASERStatistics does not currently account for repeated "
+                "observations of the same child."
+            )
 
-    elif analysis_type == "repeated_cross_section":
+        statistics_metadata = (
+            analysis_plan[["variable", "grouping"]]
+            .drop_duplicates()
+            .rename(columns={
+                "variable": "variable_name",
+                "grouping": "analysis_group",
+            })
+        )
+        statistics_runner = statistics_registry(
+            metadata_df=statistics_metadata,
+            registry_path=analysis_registry,
+        )
+        statistics = pd.concat(
+            [
+                statistics_runner.run(
+                    df=scored_df,
+                    design=plan_design,
+                    outcomes=(
+                        analysis_plan.loc[
+                            analysis_plan["design"] == plan_design,
+                            "outcome",
+                        ].dropna().unique().tolist()
+                    ),
+                )
+                for plan_design in analysis_plan["design"].unique()
+            ],
+            ignore_index=True,
+        )
 
-        analyzer.run_repeated_cross_section_analysis()
+        if statistics.empty:
+            raise ValueError(
+                "The statistics registry contains no applicable model "
+                f"rules for design '{planner_design}'."
+            )
 
-    # elif analysis_type == "repeated_measures":
+        statistics_dir = output_dir / "statistics"
+        statistics_dir.mkdir(parents=True, exist_ok=True)
+        statistics_file = (
+            statistics_dir / "aser_statistics.csv"
+        )
+        statistics.to_csv(statistics_file, index=False)
 
-    #     analyzer.run_repeated_measures_analysis()
+        print("\nSTATISTICAL ANALYSES")
+        print(f"  - {statistics_file}")
+
+    figures = ASER_Analyser_Plotly(
+        scored_df,
+        analysis_plan,
+        statistics=stats,
+        statistics_results=statistics,
+    ).run()
+
+    print("\nFIGURES")
+    for number, item in enumerate(figures, start=1):
+        figure_file = figure_dir / (
+            f"{number:02d}_{safe_filename(item['title'])}.png"
+        )
+        item["figure"].write_image(
+            str(figure_file), width=1100, height=600, scale=2
+        )
+        print(f"  - {figure_file}")
 
     # =====================================
     # SAVE OUTPUTS

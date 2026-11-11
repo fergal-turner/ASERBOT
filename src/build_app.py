@@ -9,8 +9,10 @@ MODULES = [
     "default_dictionaries.py",
     "dataset_interpreter.py",
     "aser_column_matcher.py",
+    "aser_analysisplanner.py",
     "aser_validator.py",
     "aser_scorer.py",
+    "aser_statistics.py",
     "aser_analyser_plotly.py",
     "run_app.py",
 ]
@@ -22,6 +24,10 @@ def embed(obj):
 
 
 modules = {name: (src / name).read_text(encoding="utf-8") for name in MODULES}
+modules["analysis_registry.csv"] = (
+    (root / "Resources" / "analysis_registry.csv")
+    .read_text(encoding="utf-8")
+)
 sample = (root / "Data" / "sample_data.csv").read_text(encoding="utf-8")
 
 html = (

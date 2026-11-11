@@ -118,6 +118,20 @@ class ASERColumnMatcher:
 
         return list(expanded)
 
+    def detect_analysis_type(self):
+        if "round" not in self.df.columns:
+            return "cross_section"
+
+        if "uid" not in self.df.columns:
+            return "repeated_cross_section"
+
+        rounds_per_child = self.df.groupby("uid")["round"].nunique()
+
+        if rounds_per_child.max() > 1:
+            return "repeated_measures"
+
+        return "repeated_cross_section"
+
     def identify_assessment_columns(self):
 
         results = {}
