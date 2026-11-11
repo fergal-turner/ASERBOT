@@ -11,6 +11,10 @@ ASERBOT is a web page that runs its Python analysis in the user's browser using 
 | `src/app_template.html` | Source for the HTML page, styles, browser-side JavaScript, and build placeholders. | Change the interface, appearance, text, or browser behaviour. |
 | `src/build_app.py` | Combines the template, Python modules, and sample CSV into the distributable HTML. | Change which files are included or how the bundle is produced. |
 | `src/run_app.py` | Browser-facing Python functions for matching columns and running the analysis pipeline. | Change how browser inputs are prepared, checked, and passed into the pipeline. |
+| `src/aser_analysisplanner.py` | Expands metadata and the analysis registry into one row per planned analysis or visualisation. Plans are cumulative (`repeat_cross` includes `cross_section`; `repeat_measures` includes both) and ordered by domain (literacy, numeracy), registry outcome, variable, then registry rule. Predictors are grouped as `binary` (2 values), `cat_low` (3–5), `cat_high`, `ord_low` or `cont`; `binary`/`ord_low`/`cont` report an odds ratio, while `cat_low`/`cat_high` report a likelihood-ratio test. For repeated cross-sections a `round` row (baseline vs endline, with its odds ratio) is added first for each outcome. Statistics notes sit right-aligned beneath each chart. | Change how the row-level analysis plan is generated. |
+| `Resources/analysis_registry.csv` | Defines the visualisation and statistical rule for each design, outcome, and variable grouping. | Change which analyses and chart types are planned. |
+| `src/pipeline.py` | Interactive local analysis pipeline. | Prompts for optional statistical analyses and their registry. |
+| `src/aser_statistics.py` | Descriptive summaries for scored literacy and numeracy levels. | Change the statistics produced by the local pipeline. |
 | `ASERBOT.html` | Generated, standalone HTML app that users open. | Normally do not edit this directly; rebuild it from the source files. |
 
 The overall flow is:
@@ -32,6 +36,22 @@ src/app_template.html + Python modules + Data/sample_data.csv
                               |
                  matching, validation, scoring, plots
 ```
+
+The interactive local pipeline is separate from the browser app. To run the
+registry-defined statistical analyses, run `python .\src\pipeline.py` and answer
+`y` to "Run statistical analyses?". The pipeline always asks for the analysis
+registry CSV, which drives both the plan and the statistics; leave it blank to use
+`Resources\analysis_registry.csv`. Charts come from the same plan-driven Plotly
+analyser as the browser app and are exported as PNGs to `outputs\figures`
+(this needs kaleido: `python -m pip install kaleido`). The registry needs the columns
+`design`, `outcome`, `grouping`, `model`, and `stat`. The plan's `variable` and
+`grouping` columns are passed to the statistics module as
+`variable_name` and `analysis_group`. Results are saved to
+`outputs\statistics\aser_statistics.csv`. This option requires statsmodels
+(`python -m pip install statsmodels`). If you answer `n`, statistical analyses
+are not imported or run. Repeated-measures data is currently rejected for
+statistics because the module does not account for repeated observations per
+child.
 
 ## 1. `src/app_template.html`: the interface source
 
@@ -247,9 +267,18 @@ It converts the matcher output into field records for the browser. Clear ASER ma
 4. renames mapped dataset columns to their canonical field names;
 5. validates the dataset with `ASERValidator`;
 6. returns validation errors and warnings if the dataset is not ready;
-7. scores the data with `ASERScorer`;
-8. constructs the Plotly analyser and determines the analysis type;
-9. runs the analyser and serializes each figure as JSON.
+7. detects the analysis design and scores the data with `ASERScorer`;
+8. builds the row-level plan with `ASERAnalysisPlanner` and
+   `Resources/analysis_registry.csv`;
+9. passes the plan to the Plotly analyser, which renders each enabled row in
+   order, then serializes the figures as JSON. Setting
+   `run_analysis(..., statistics=True)` also runs the registry-defined models
+   and adds each available estimate to its figure as a note, using the
+   registry symbol and `*` when `p < 0.05`. This optional mode requires
+   `statsmodels`; charts without an estimable result are rendered without a
+   statistic note. Statistical annotations are not currently available for
+   repeated-measures data because the models do not adjust for within-child
+   dependence.
 
 The result has this general shape:
 
@@ -273,6 +302,8 @@ The actual values depend on the uploaded dataset. The browser uses `log` for the
 ## 4. `ASERBOT.html`: the generated app users open
 
 `ASERBOT.html` is the build output. It contains the template's HTML, CSS, and JavaScript, plus the embedded Python modules and sample data.
+
+The app's optional **Include statistical estimates** checkbox loads `statsmodels` in Pyodide when selected and requests model results where the analysis plan defines a model. Repeated-cross-section plans can include paired baseline/endline stacked bars, distribution-change heatmaps, and foundational-learning trends. The foundational indicators mark learners at the highest level available in the corresponding scored assessment. Literacy and numeracy figures are grouped into separate tabs; additional analysis sections appear in their own tabs.
 
 Treat it as a generated file:
 

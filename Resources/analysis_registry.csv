@@ -1,0 +1,33 @@
+design,outcome,grouping,change,interaction,vis,double_repeat,model,stat,symbol
+cross_section,levels,binary,no,no,stack_bar,yes,ord_logit,or,OR
+cross_section,levels,cat_low,no,no,stack_bar,yes,ord_logit,lr,LR χ²
+cross_section,levels,cat_high,no,no,,no,ord_logit,lr,LR χ²
+cross_section,levels,ord_low,no,no,stack_bar,yes,ord_logit,or,OR
+cross_section,levels,cont,,,,no,,
+cross_section,foundational_learning,binary,no,no,bar,yes,logit,or,OR
+cross_section,foundational_learning,cat_low,no,no,bar,yes,logit,lr,LR χ²
+cross_section,foundational_learning,cat_high,no,no,scatter,no,logit,lr,LR χ²
+cross_section,foundational_learning,ord_low,no,no,bar,yes,logit,or,OR
+cross_section,foundational_learning,cont,no,no,line,yes,logit,or,OR
+repeat_cross,levels,round,no,no,stack_bar,no,ord_logit,or,OR
+repeat_cross,levels,binary,yes,yes,heatmap,no,,,
+repeat_cross,levels,cat_low,yes,yes,heatmap,no,,,
+repeat_cross,levels,cat_high,,,,no,ord_logit,lr,LR χ²
+repeat_cross,levels,ord_low,yes,yes,heatmap,no,,,
+repeat_cross,levels,cont,,,,no,,,
+repeat_cross,foundational_learning,round,no,no,bar,no,logit,or,OR
+repeat_cross,foundational_learning,binary,yes,yes,lines,no,,,
+repeat_cross,foundational_learning,cat_low,yes,yes,lines,no,,,
+repeat_cross,foundational_learning,cat_high,yes,yes,scatters,no,,,
+repeat_cross,foundational_learning,ord_low,yes,yes,lines,no,,,
+repeat_cross,foundational_learning,cont,yes,yes,line_cont,no,,,
+repeat_measures,mean_change,binary,no,no,bar,no,linear,beta,β
+repeat_measures,mean_change,cat_low,no,no,bar,no,linear,beta,β
+repeat_measures,mean_change,cat_high,no,no,scatter,no,anova,eta2,Variance explained
+repeat_measures,mean_change,ord_low,no,no,bar,no,linear,beta,β
+repeat_measures,mean_change,cont,no,no,line,no,linear,beta,β
+repeat_measures,change_binary,binary,no,no,bar,no,logit,or,OR
+repeat_measures,change_binary,cat_low,no,no,bar,no,logit,lr,LR χ²
+repeat_measures,change_binary,cat_high,no,no,scatter,no,logit,lr,LR χ²
+repeat_measures,change_binary,ord_low,no,no,bar,no,logit,or,OR
+repeat_measures,change_binary,cont,no,no,line,no,logit,or,OR
