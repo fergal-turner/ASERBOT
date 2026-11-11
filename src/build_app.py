@@ -37,6 +37,6 @@ html = (
     .replace("__SAMPLE_CSV__", embed(sample))
 )
 
-out = root / "ASERBOT.html"
+out = root / "index.html"
 out.write_text(html, encoding="utf-8")
 print(f"Wrote {out} ({out.stat().st_size / 1024:.0f} KB)")
